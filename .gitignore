@@ -1,0 +1,17 @@
+CLAUDE.md
+CLAUDE.local.md
+.mcp.json
+.worktreeinclude
+.claude/
+.veronica-lock
+.understand-anything/
+.gitnexus/
+
+node_modules/
+packages/*/node_modules/
+packages/extension/out/
+
+.env
+.venv
+
+tmp/
