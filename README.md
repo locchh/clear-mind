@@ -20,7 +20,7 @@
 
     - Token cleanup
     - Detox polluted tool results
-    - Flag hallucination / wrong assumptions
+    - Remove hallucinated / wrong-assumption content
     - Fact cache
 
 - Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
