@@ -2,9 +2,9 @@
 
 ## Features
 
-- Visualize session jsonl
+1. Visualize session jsonl
 
-- Monitor
+2. Monitor
 
     - Cost
     - Token Usage
@@ -14,16 +14,16 @@
     - Cognitive surrender
     - Token blowout
 
-- Mind Palace
-
-- Context detox
+3. Context detox
 
     - Token cleanup
     - Detox polluted tool results
     - Remove hallucinated / wrong-assumption content
     - Fact cache
 
-- Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
+4. Mind Palace
+
+5. Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
 
 ## Related to
 
