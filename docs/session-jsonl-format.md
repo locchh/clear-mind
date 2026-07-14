@@ -68,21 +68,21 @@ Records come in three shapes:
 
 ## Record type overview
 
-| type | count seen | category | purpose |
-|---|--:|---|---|
-| `assistant` | 13,925 | conversation | model output: text, thinking, tool calls, token usage |
-| `user` | 8,812 | conversation | user prompts **and** tool results (both have `role: user`) |
-| `attachment` | 3,426 | conversation | harness-injected context (26 subtypes) |
-| `system` | 1,772 | conversation | harness events (9 subtypes: durations, compaction, hooks…) |
-| `file-history-snapshot` | 2,101 | infra | file-backup checkpoints for rewind/undo |
-| `last-prompt` | 2,305 | metadata | latest user prompt (for session-picker preview) |
-| `mode` | 2,076 | metadata | UI mode (normal / plan …) |
-| `permission-mode` | 2,027 | metadata | permission mode (auto / manual …) |
-| `ai-title` | 1,564 | metadata | auto-generated session title |
-| `queue-operation` | 1,093 | metadata | message-queue events (enqueue/dequeue/remove/popAll) |
-| `agent-name` | 44 | metadata | name assigned to a background agent session |
-| `custom-title` | 23 | metadata | user-set session title (overrides `ai-title`) |
-| `pr-link` | 1 | metadata | PR created from this session |
+| type | count seen | category | purpose | visualize? |
+|---|--:|---|---|---|
+| `assistant` | 13,925 | conversation | model output: text, thinking, tool calls, token usage | **yes — chain node** + per-turn cost/token overlay from `usage` |
+| `user` | 8,812 | conversation | user prompts **and** tool results (both have `role: user`) | **yes — chain node**; tool results sized by tokens (detox / verification-debt signals) |
+| `attachment` | 3,426 | conversation | harness-injected context (26 subtypes) | **yes — toggleable "pollution" layer**, dimmed; its token share is the first detox metric |
+| `system` | 1,772 | conversation | harness events (9 subtypes: durations, compaction, hooks…) | **yes — timeline markers**; `compact_boundary`'s preTokens→postTokens drop is the Token-blowout signal |
+| `file-history-snapshot` | 2,101 | infra | file-backup checkpoints for rewind/undo | no — never sent to the model, no context impact |
+| `last-prompt` | 2,305 | metadata | latest user prompt (for session-picker preview) | not rendered — but `leafUuid` selects the active branch to draw |
+| `mode` | 2,076 | metadata | UI mode (normal / plan …) | no |
+| `permission-mode` | 2,027 | metadata | permission mode (auto / manual …) | no |
+| `ai-title` | 1,564 | metadata | auto-generated session title | not rendered — session label only |
+| `queue-operation` | 1,093 | metadata | message-queue events (enqueue/dequeue/remove/popAll) | no |
+| `agent-name` | 44 | metadata | name assigned to a background agent session | not rendered — label for sidechain nodes |
+| `custom-title` | 23 | metadata | user-set session title (overrides `ai-title`) | not rendered — session label only |
+| `pr-link` | 1 | metadata | PR created from this session | no |
 
 ---
 
