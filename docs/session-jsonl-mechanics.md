@@ -50,7 +50,7 @@ Conversation records don't form a flat list — they form a **linked tree**:
 - the first record of a session has `parentUuid: null`
 - **branching**: when the user edits/rewinds to an earlier message, the new branch's first record points at that earlier `uuid` — both branches remain in the file; only the active branch is sent to the model
 - `last-prompt.leafUuid` tells you which leaf is the active branch head
-- `promptId` groups every record produced by one user turn
+- `promptId` groups the `user` records of one turn (typed prompt + its tool results) — verified absent on `assistant`/`system`/`attachment` records, which link to the turn only via `parentUuid`
 - tool results link back two ways: `parentUuid` (chain position) and `sourceToolAssistantUUID` (+ block-level `tool_use_id`) to the assistant record that requested them
 
 ```mermaid
@@ -76,10 +76,10 @@ sequenceDiagram
     participant API as Claude API
 
     U->>CC: types prompt
+    CC->>F: append last-prompt (metadata — position varies, often here, sometimes mid-turn)
     CC->>F: append file-history-snapshot
     CC->>F: append user record (promptSource: typed)
     CC->>F: append attachment records (IDE state, tool deltas, reminders…)
-    CC->>F: append last-prompt (metadata)
     CC->>API: request (active branch as context)
     API-->>CC: response (thinking + tool_use)
     CC->>F: append assistant record (with usage)
@@ -117,7 +117,7 @@ Crucial detail for analysis tools: **the jsonl keeps the full pre-compact histor
 | Trigger | Records appended |
 |---|---|
 | Session start | `mode`, `permission-mode` |
-| User sends prompt | `file-history-snapshot`, `user`, `attachment`*, `last-prompt` |
+| User sends prompt | `last-prompt`, `file-history-snapshot`, `user`, `attachment`* (verified order: snapshot immediately precedes the typed `user`; `last-prompt`'s exact position varies) |
 | API response arrives | `assistant` |
 | Tool finishes | `user` (tool_result) |
 | Turn completes | `system/turn_duration` |
@@ -170,11 +170,11 @@ So anything built on parsing these files works for both interactive Claude Code 
 ### Minimal reader (reference implementation)
 
 ```python
-import json, collections
+import json, collections, os
 
 def read_session(path):
     records, by_uuid = [], {}
-    for line in open(path):
+    for line in open(os.path.expanduser(path)):
         line = line.strip()
         if not line:
             continue

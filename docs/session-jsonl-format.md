@@ -13,10 +13,12 @@ Every Claude Code session is persisted as an append-only JSONL file (one JSON ob
     ├── 89641573-e8f3-.../                 # optional sibling dir (same name, no extension)
     │   ├── subagents/
     │   │   ├── agent-<agentId>.jsonl      # each subagent's own transcript
-    │   │   ├── agent-<agentId>.meta.json  # {agentType, description, toolUseId}
+    │   │   ├── agent-<agentId>.meta.json  # {agentType, description, toolUseId, spawnDepth}
     │   │   └── workflows/wf_<id>/         # workflow-spawned agents + journal.jsonl
     │   ├── tool-results/*.txt             # large tool outputs offloaded to disk
-    │   └── workflows/wf_<id>.json         # workflow scripts
+    │   └── workflows/
+    │       ├── wf_<id>.json               # workflow run state/result (status, phases, totalTokens, logs…)
+    │       └── scripts/<name>-wf_<id>.js  # the actual workflow scripts
     └── memory/                            # project memory (not part of transcript)
 ```
 
@@ -60,7 +62,7 @@ Records come in three shapes:
 | `userType`, `entrypoint` | `"external"`, `"cli"` (or SDK entrypoints) |
 | `promptId` | groups the `user` records (typed prompt + its tool results) belonging to one turn — confirmed absent on `assistant` records |
 
-2. **Session-metadata records** (`mode`, `permission-mode`, `ai-title`, `custom-title`, `last-prompt`, `agent-name`, `pr-link`, `queue-operation`) — tiny, no envelope, just `type` + payload + `sessionId`. They are **appended again each time the value changes; the last occurrence wins**.
+2. **Session-metadata records** (`mode`, `permission-mode`, `ai-title`, `custom-title`, `last-prompt`, `agent-name`, `pr-link`, `queue-operation`) — tiny, no envelope, just `type` + payload + `sessionId` (`queue-operation` alone also carries a `timestamp`, and its `content` field only appears on enqueue). They are **appended again each time the value changes; the last occurrence wins**.
 
 3. **`file-history-snapshot`** fits neither shape: no `uuid`/`parentUuid` chain (so not shape 1), but also not "latest wins" — every edit appends a new record rather than replacing the last one (so not shape 2 either). See [section 5](#5-file-history-snapshot--rewind-checkpoints). The table below tags it `infra` to flag that difference.
 
@@ -137,7 +139,7 @@ flowchart TD
 One record **per API response** in a turn: N tool calls produce N+1 assistant records (N requesting a tool, +1 final with `stop_reason: end_turn`) — e.g. N=5 tool calls → 6 assistant records. These are linked to the turn only via the `parentUuid` chain (verified: `assistant` records carry no `promptId` — that field lives on `user` records only). Carries `requestId` and the full API `message`:
 
 - `message.content[]` blocks: `thinking` (with cryptographic `signature`), `text`, `tool_use` (`{id, name, input, caller}`)
-- `message.stop_reason`: `tool_use` (wants a tool) or `end_turn` (done)
+- `message.stop_reason`: `tool_use` (wants a tool), `end_turn` (done), or `null` (response cut off mid-stream, e.g. user interrupt)
 - `message.usage` — **the cost/token record**:
 
 ```json
@@ -323,11 +325,13 @@ Subagent (Task/Agent tool, workflows) transcripts are **not inlined** in the mai
 
 ```
 <project>/<sessionId>/subagents/agent-<agentId>.jsonl        # same record format
-<project>/<sessionId>/subagents/agent-<agentId>.meta.json    # {agentType, description, toolUseId}
+<project>/<sessionId>/subagents/agent-<agentId>.meta.json    # {agentType, description, toolUseId, spawnDepth}
 <project>/<sessionId>/subagents/workflows/wf_<id>/...        # workflow agents + journal.jsonl
 ```
 
 Records inside are identical in shape but have `isSidechain: true` and an extra `agentId` field, and share the parent's `sessionId`. The `meta.json`'s `toolUseId` links the subagent back to the exact `tool_use` block in the parent transcript that spawned it.
+
+**Workflow agents differ in two ways** (verified against real workflow runs): their `meta.json` has only `{agentType, spawnDepth}` — no `description`/`toolUseId`, since they're spawned by the workflow script, not a `tool_use` block — and the sibling `journal.jsonl` logs one `{type: "started", key: "v2:<hash>", agentId}` record per `agent()` call plus a matching `{type: "result", key, agentId, result}` on completion. The `key` hashes the call's (prompt, opts) — it's what lets a resumed workflow return cached results for unchanged calls.
 
 ```mermaid
 flowchart TD
