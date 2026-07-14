@@ -22,7 +22,18 @@ Every Claude Code session is persisted as an append-only JSONL file (one JSON ob
 
 ## The two record shapes
 
-Records come in two shapes:
+A session file is one append-only log read by two very different consumers. The **conversation** (what the user typed, what the model said, tool calls) has to be reconstructed in order as a tree, so those lines carry chain pointers (`uuid`/`parentUuid`). The **UI state** (current mode, session title, last prompt preview) only needs "what's the current value right now" — no chaining, no tree, just the latest line of that type. Two different jobs, so the file ends up with two structurally different kinds of lines living side by side.
+
+```
+{"type":"mode","mode":"normal","sessionId":"89641573-..."}
+{"type":"user","uuid":"a2e0-...","parentUuid":null,"message":{"role":"user","content":"hi"}}
+{"type":"assistant","uuid":"b3f1-...","parentUuid":"a2e0-...","message":{"role":"assistant","content":[...]}}
+{"type":"mode","mode":"plan","sessionId":"89641573-..."}
+```
+
+`mode` lines are flat and standalone; `user`/`assistant` lines chain to each other via `uuid`/`parentUuid`. Same file, two shapes, mixed freely by write order.
+
+Records come in three shapes:
 
 1. **Conversation records** (`user`, `assistant`, `system`, `attachment`) — full envelope, part of the message DAG:
 
@@ -30,6 +41,8 @@ Records come in two shapes:
 |---|---|
 | `uuid` | unique id of this record |
 | `parentUuid` | id of the previous record in the chain (`null` = chain root) |
+| `logicalParentUuid` | only on `compact_boundary`; preserves the logical link to pre-compact history when `parentUuid` is reset to `null` |
+| `requestId` | id of the API request that produced this record (`assistant` records only) |
 | `type` | record type |
 | `timestamp` | ISO-8601 write time |
 | `sessionId` | owning session UUID (newer records also carry legacy `session_id`) |
@@ -40,6 +53,8 @@ Records come in two shapes:
 | `promptId` | groups all records belonging to one user turn |
 
 2. **Session-metadata records** (`mode`, `permission-mode`, `ai-title`, `custom-title`, `last-prompt`, `agent-name`, `pr-link`, `queue-operation`) — tiny, no envelope, just `type` + payload + `sessionId`. They are **appended again each time the value changes; the last occurrence wins**.
+
+3. **`file-history-snapshot`** fits neither shape: no `uuid`/`parentUuid` chain (so not shape 1), but also not "latest wins" — every edit appends a new record rather than replacing the last one (so not shape 2 either). See [section 5](#5-file-history-snapshot--rewind-checkpoints). The table below tags it `infra` to flag that difference.
 
 ## Record type overview
 
@@ -248,6 +263,8 @@ Written at the start of a user turn; backs the "rewind/undo file changes" featur
 ```
 
 `trackedFileBackups` maps file paths to backup metadata as tools modify files during the turn. Updates are **appended** as new records with `isSnapshotUpdate: true` (never edited in place).
+
+Note what's absent: no `sessionId`, no `uuid`/`parentUuid`. Confirmed against real session files — this isn't a truncated example, the type genuinely carries none of the envelope fields. `messageId` is the only link back to the conversation.
 
 ```mermaid
 flowchart TD

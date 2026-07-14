@@ -58,7 +58,7 @@ flowchart TD
     R0["user #1 (parentUuid: null)"] --> A1[assistant #1]
     A1 --> U2["user #2"]
     U2 --> A2[assistant #2 — user didn't like this]
-    U2 -.->|"user edits msg → new branch<br/>parentUuid points back at user #2's parent chain"| U2b["user #2' (edited)"]
+    A1 -.->|"user edits msg #2 → new branch<br/>parentUuid = assistant #1 (U2's parent), NOT U2<br/>→ U2' is a sibling of U2, not its child"| U2b["user #2' (edited)"]
     U2b --> A2b[assistant #2']
     A2b --> LEAF["...active branch...<br/>(last-prompt.leafUuid points here)"]
     A2 -.-> DEAD[abandoned branch — still in file, never sent to model]
@@ -132,6 +132,8 @@ Crucial detail for analysis tools: **the jsonl keeps the full pre-compact histor
 | `/command` executed locally | `system/local_command` |
 | Subagent spawned | *nothing in main file* — new `subagents/agent-<id>.jsonl` + `.meta.json`; result returns as a normal tool_result |
 | PR created | `pr-link` |
+
+\* zero or more — a prompt may trigger no `attachment` records at all, or several (one per harness-injected item).
 
 **Can external tools add records?** Mechanically yes — it's just a text append, and readers (resume, session picker) will pick it up. Safe only when the session is not live (single-writer assumption; concurrent appends risk interleaved partial lines). For clear-mind: treat live session files as **read-only streams** (tail them like `tail -f`), and write derived data (annotations, detox verdicts, fact cache) to your own sidecar files, keyed by record `uuid` — never mutate the transcript itself.
 
