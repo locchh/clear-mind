@@ -20,7 +20,7 @@ Every Claude Code session is persisted as an append-only JSONL file (one JSON ob
     └── memory/                            # project memory (not part of transcript)
 ```
 
-## The two record shapes
+## The record shapes
 
 A session file is one append-only log read by two very different consumers. The **conversation** (what the user typed, what the model said, tool calls) has to be reconstructed in order as a tree, so those lines carry chain pointers (`uuid`/`parentUuid`). The **UI state** (current mode, session title, last prompt preview) only needs "what's the current value right now" — no chaining, no tree, just the latest line of that type. Two different jobs, so the file ends up with two structurally different kinds of lines living side by side.
 
@@ -32,6 +32,14 @@ A session file is one append-only log read by two very different consumers. The 
 ```
 
 `mode` lines are flat and standalone; `user`/`assistant` lines chain to each other via `uuid`/`parentUuid`. Same file, two shapes, mixed freely by write order.
+
+### `uuid` / `parentUuid`: the chain
+
+`uuid` is a record's own id. `parentUuid` is the `uuid` of the record immediately before it — walking that pointer rebuilds the conversation in order.
+
+All four conversation types carry it, not just `user`/`assistant`: `system` and `attachment` records chain in too, because they're part of what gets replayed back to the model — every one of them needs an exact position. Metadata records (`mode`, `ai-title`, …) never carry it; they're read independently by the UI, not replayed to the model, so they have no position to track.
+
+It's usually one straight chain, but it can branch into a tree: editing or rewinding to an earlier message makes the new record's `parentUuid` point back at that earlier `uuid` instead of the latest one, leaving both branches in the file. `last-prompt.leafUuid` marks which branch is active. Full branching diagram in `session-jsonl-mechanics.md` section 3.
 
 Records come in three shapes:
 
