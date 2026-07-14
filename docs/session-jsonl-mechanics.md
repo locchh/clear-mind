@@ -155,63 +155,17 @@ So anything built on parsing these files works for both interactive Claude Code 
 
 ## 8. Usage — what you can build from this file (clear-mind mapping)
 
-| clear-mind feature | jsonl source |
+| Feature | How? |
 |---|---|
 | **Visualize session** | replay records, rebuild DAG via `uuid`/`parentUuid`, group by `promptId`, render branches + sidechain files |
 | **Cost / Token Usage** | sum `assistant.message.usage` (input, output, cache_creation, cache_read; 1h vs 5m ephemeral split) |
-| **Token blowout** | per-turn usage deltas; `compact_boundary.compactMetadata.preTokens/postTokens`; attachment-token share |
-| **Loss in middle** | distance (in tokens) between where a fact entered (tool_result uuid) and where it was used/needed again |
-| **Verification debt** | `tool_use` Edit/Write records not followed by a verifying Bash/Read/test before `end_turn` |
-| **Comprehension rot** | repeated Reads of the same `filePath` (from `toolUseResult.file`) across the session |
-| **Cognitive surrender** | `turn_duration.durationMs` high while assistant text tokens low; interrupt records (`interruptedMessageId`) |
-| **Context detox** | tool_result size vs. how much of it the following assistant text references; `attachment` bookkeeping share; superseded tool results (same file read twice → first is dead weight) |
-| **Fact cache** | key: `(tool name, canonical input)` from `tool_use`; value: `toolUseResult`; invalidate on `edited_text_file` attachments / `file-history-snapshot` changes |
-
-### Minimal reader (reference implementation)
-
-```python
-import json, collections, os
-
-def read_session(path):
-    records, by_uuid = [], {}
-    for line in open(os.path.expanduser(path)):
-        line = line.strip()
-        if not line:
-            continue
-        d = json.loads(line)
-        records.append(d)
-        if "uuid" in d:
-            by_uuid[d["uuid"]] = d
-    return records, by_uuid
-
-def latest(records, rtype, field):
-    """append-latest-wins metadata lookup"""
-    vals = [r[field] for r in records if r.get("type") == rtype]
-    return vals[-1] if vals else None
-
-def active_branch(records, by_uuid):
-    """walk back from the current leaf to the root"""
-    leaf = latest(records, "last-prompt", "leafUuid")
-    chain, cur = [], by_uuid.get(leaf)
-    while cur:
-        chain.append(cur)
-        cur = by_uuid.get(cur.get("parentUuid") or cur.get("logicalParentUuid"))
-    return list(reversed(chain))
-
-def usage_rollup(records):
-    total = collections.Counter()
-    for r in records:
-        if r.get("type") == "assistant":
-            u = r["message"].get("usage") or {}
-            for k in ("input_tokens", "output_tokens",
-                      "cache_creation_input_tokens", "cache_read_input_tokens"):
-                total[k] += u.get(k, 0)
-    return dict(total)
-
-records, by_uuid = read_session("~/.claude/projects/<proj>/<session>.jsonl")
-print(latest(records, "ai-title", "aiTitle"))
-print(usage_rollup(records))
-```
+| **Token blowout** | tbd |
+| **Loss in middle** | tbd |
+| **Verification debt** | tbd |
+| **Comprehension rot** | tbd |
+| **Cognitive surrender** | tbd |
+| **Context detox** | tbd |
+| **Fact cache** | tbd |
 
 ## 9. Caveats
 
