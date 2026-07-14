@@ -94,6 +94,15 @@ export const ConversationEnvelopeSchema = z.looseObject({
   message: MessageSchema.optional(), // absent on system/attachment
 });
 
+/* --- metadata records: tiny, no envelope, latest-occurrence-wins --- */
+
+/** `last-prompt` — its `leafUuid` marks the active-branch head (used to walk the DAG). */
+export const LastPromptSchema = z.looseObject({
+  type: z.literal("last-prompt"),
+  lastPrompt: z.string(),
+  leafUuid: z.string(),
+});
+
 /* --- top-level: permissive, every line validates against this --- */
 
 export const SessionRecordSchema = z.looseObject({
