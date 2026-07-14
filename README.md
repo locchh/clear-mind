@@ -2,9 +2,9 @@
 
 ## Features
 
-1. Visualize session jsonl `clear-mind <path/to/your/transcript.jsonl>`
+1. Visualize session jsonl `clear-mind viz <path/to/your/transcript.jsonl>`
 
-2. Monitor
+2. Monitor `clear-mind monitor <path/to/your/transcript.jsonl>`
 
     - Cost
     - Token Usage
@@ -14,14 +14,14 @@
     - Cognitive surrender
     - Token blowout
 
-3. Context detox
+3. Context detox `clear-mind detox <path/to/your/transcript.jsonl>`
 
     - Token cleanup
     - Detox polluted tool results
     - Remove hallucinated / wrong-assumption content
     - Fact cache
 
-4. Mind Palace
+4. [Mind Palace](https://artofmemory.com/blog/how-to-build-a-memory-palace/)
 
 5. Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
 
