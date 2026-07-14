@@ -1,5 +1,9 @@
 # clear-mind
 
+## Setup
+
+- compile `bunx tsc --noEmit`
+
 ## Features
 
 1. Visualize session jsonl `clear-mind viz <path/to/your/transcript.jsonl>`

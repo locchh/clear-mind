@@ -1,0 +1,6 @@
+node_modules/
+dist/
+
+# hand-authored markdown: aligned tables + mermaid diagrams prettier would reflow
+docs/
+README.md
