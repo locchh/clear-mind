@@ -58,7 +58,7 @@ Records come in three shapes:
 | `isMeta` | `true` = injected context, not something the user actually typed |
 | `cwd`, `gitBranch`, `version` | working dir, git branch, Claude Code version at write time |
 | `userType`, `entrypoint` | `"external"`, `"cli"` (or SDK entrypoints) |
-| `promptId` | groups all records belonging to one user turn |
+| `promptId` | groups the `user` records (typed prompt + its tool results) belonging to one turn — confirmed absent on `assistant` records |
 
 2. **Session-metadata records** (`mode`, `permission-mode`, `ai-title`, `custom-title`, `last-prompt`, `agent-name`, `pr-link`, `queue-operation`) — tiny, no envelope, just `type` + payload + `sessionId`. They are **appended again each time the value changes; the last occurrence wins**.
 
@@ -134,7 +134,7 @@ flowchart TD
 
 ## 2. `assistant` — model output
 
-One record **per API response** in a turn — a turn with 5 tool calls produces ≥6 assistant records, all sharing the turn's `promptId` chain. Carries `requestId` and the full API `message`:
+One record **per API response** in a turn: N tool calls produce N+1 assistant records (N requesting a tool, +1 final with `stop_reason: end_turn`) — e.g. N=5 tool calls → 6 assistant records. These are linked to the turn only via the `parentUuid` chain (verified: `assistant` records carry no `promptId` — that field lives on `user` records only). Carries `requestId` and the full API `message`:
 
 - `message.content[]` blocks: `thinking` (with cryptographic `signature`), `text`, `tool_use` (`{id, name, input, caller}`)
 - `message.stop_reason`: `tool_use` (wants a tool) or `end_turn` (done)
@@ -301,7 +301,7 @@ All follow the same trivial pattern: **event → append `{type, payload, session
 ```mermaid
 flowchart LR
     EV{state change} -->|mode switch| M[mode / permission-mode]
-    EV -->|title (re)generated| T[ai-title / custom-title]
+    EV -->|"title (re)generated"| T[ai-title / custom-title]
     EV -->|prompt sent| L[last-prompt + leafUuid]
     EV -->|msg queued while busy| Q[queue-operation]
     EV -->|PR created| P[pr-link]
