@@ -2,7 +2,7 @@
 
 ## Features
 
-1. Visualize session jsonl
+1. Visualize session jsonl `clear-mind <path/to/your/transcript.jsonl>`
 
 2. Monitor
 
