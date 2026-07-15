@@ -91,6 +91,6 @@ Sessions live under `~/.claude/projects/<cwd-slug>/<session-uuid>.jsonl`, where
 
 [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) - Build production AI agents with Claude Code as a library.
 
-[Claude Code Loops](https://claude.ai/public/artifacts/11bdc800-3d82-4cd1-8a05-a82ae516f8cb) - An applied coursebook on Claude Code loops, published as a public Claude artifact.
+[Claude Code Loops](https://claude.ai/public/artifacts/11bdc800-3d82-4cd1-8a05-a82ae516f8cb) - An applied coursebook on Claude Code loops.
 
-[Claude - Hooks reference](https://code.claude.com/docs/en/hooks) - Reference for Claude Code hook events, configuration schema, JSON input/output formats, exit codes, async hooks, HTTP hooks, prompt hooks, and MCP tool hooks.
+[Claude - Hooks reference](https://code.claude.com/docs/en/hooks) - Reference for Claude Code hook events.
