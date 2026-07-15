@@ -295,7 +295,7 @@ All follow the same trivial pattern: **event → append `{type, payload, session
 | `permission-mode` | `permissionMode: "auto"` | permission mode changes |
 | `ai-title` | `aiTitle: "Study Ponytail GitHub repository"` | auto-title generated/regenerated as topic drifts |
 | `custom-title` | `customTitle: "My renamed session"` | user renames the session |
-| `last-prompt` | `lastPrompt: "...", leafUuid: "..."` | after each user prompt — powers session-picker preview; `leafUuid` = current DAG leaf |
+| `last-prompt` | `lastPrompt: "...", leafUuid: "..."` (the `lastPrompt` text is sometimes absent — 48 of 2,315 observed records carry only `leafUuid` + `sessionId`) | after each user prompt — powers session-picker preview; `leafUuid` = current DAG leaf |
 | `agent-name` | `agentName: "implement-archive-loop"` | a named background agent session starts |
 | `pr-link` | `prNumber, prUrl, prRepository` | a PR is created from the session |
 | `queue-operation` | `operation: enqueue/dequeue/remove/popAll, content` | user queues messages while the agent is busy |

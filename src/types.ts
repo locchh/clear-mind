@@ -96,10 +96,13 @@ export const ConversationEnvelopeSchema = z.looseObject({
 
 /* --- metadata records: tiny, no envelope, latest-occurrence-wins --- */
 
-/** `last-prompt` — its `leafUuid` marks the active-branch head (used to walk the DAG). */
+/** `last-prompt` — its `leafUuid` marks the active-branch head (used to walk
+ *  the DAG). `lastPrompt` is optional: real sessions exist where the record
+ *  carries only `leafUuid` + `sessionId`, and requiring the text made the
+ *  whole branch walk come up empty. */
 export const LastPromptSchema = z.looseObject({
   type: z.literal("last-prompt"),
-  lastPrompt: z.string(),
+  lastPrompt: z.string().optional(),
   leafUuid: z.string(),
 });
 
@@ -109,6 +112,7 @@ export const SessionRecordSchema = z.looseObject({
   type: z.string(),
   uuid: z.string().optional(),
   parentUuid: z.string().nullable().optional(),
+  logicalParentUuid: z.string().optional(), // compact_boundary: link to pre-compact history
 });
 
 /* --- inferred types --- */
