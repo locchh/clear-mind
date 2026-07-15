@@ -33,7 +33,9 @@ export type Part =
       kind: "fold";
       variant: "think" | "tool";
       summary: string; // always-visible line
-      detail: string; // shown when expanded
+      /** shown when expanded — structured so renderers can style section
+       *  labels without sniffing the body text (which can contain anything) */
+      sections: { label: string; body: string }[];
       status?: "ok" | "error";
     };
 
@@ -145,20 +147,23 @@ function assistantParts(
           kind: "fold",
           variant: "think",
           summary: `✱ Thought process · ${lineCount(thought)}`,
-          detail: thought,
+          sections: [{ label: "", body: thought }],
         });
     } else if (block.type === "tool_use") {
       const result = results.get(String(block.id));
-      const detail =
-        `$ input\n${JSON.stringify(block.input, null, 2) ?? ""}` +
-        (result
-          ? `\n\n$ result · ${lineCount(result.body)}\n${result.body}`
-          : "");
+      const sections = [
+        { label: "input", body: JSON.stringify(block.input, null, 2) ?? "" },
+      ];
+      if (result)
+        sections.push({
+          label: `result · ${lineCount(result.body)}`,
+          body: result.body,
+        });
       parts.push({
         kind: "fold",
         variant: "tool",
         summary: `⚙ ${String(block.name)}  ${toolInputLine(block.input)}`,
-        detail,
+        sections,
         status: result ? (result.isError ? "error" : "ok") : undefined,
       });
     }

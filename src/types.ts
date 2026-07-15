@@ -84,7 +84,7 @@ export const ConversationEnvelopeSchema = z.looseObject({
   type: z.string(),
   uuid: z.string(),
   parentUuid: z.string().nullable(), // null = chain root
-  timestamp: z.string(),
+  timestamp: z.string().optional(), // optional: renderers must survive its absence (caveat #9)
   sessionId: z.string().optional(),
   logicalParentUuid: z.string().optional(), // only on compact_boundary
   requestId: z.string().optional(), // assistant only
