@@ -4,21 +4,6 @@
  * their tests can use them freely.
  */
 
-/**
- * First `maxLines` lines, each clamped to `maxCols` columns; appends
- * "… (+N more lines)" when cut. A raw Read result can be 2,000 lines —
- * every collapsed detail preview goes through this so it can't drown the view.
- */
-export function preview(text: string, maxLines = 3, maxCols = 100): string {
-  const all = text.trim().split("\n");
-  const kept = all.slice(0, maxLines).map((line) => {
-    return line.length > maxCols ? line.slice(0, maxCols) + "…" : line;
-  });
-  const dropped = all.length - kept.length;
-  if (dropped > 0) kept.push(`… (+${dropped} more lines)`);
-  return kept.join("\n");
-}
-
 /** "1 line" / "42 lines" — pluralized, because "1 lines" reads as unfinished. */
 export function lineCount(text: string): string {
   const n = text === "" ? 0 : text.split("\n").length;

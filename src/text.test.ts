@@ -3,23 +3,9 @@ import {
   cleanPrompt,
   isEcho,
   lineCount,
-  preview,
   toolInputLine,
   toolResultText,
 } from "./text";
-
-/* ---- preview ---- */
-
-test("preview clamps lines and columns, marks the cut", () => {
-  const long = Array.from({ length: 10 }, (_, i) => `line ${i}`).join("\n");
-  const out = preview(long, 3, 100);
-  expect(out.split("\n")).toHaveLength(4); // 3 kept + marker
-  expect(out).toContain("… (+7 more lines)");
-});
-
-test("preview leaves short text alone", () => {
-  expect(preview("one\ntwo", 3, 100)).toBe("one\ntwo");
-});
 
 /* ---- lineCount ---- */
 

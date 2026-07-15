@@ -5,7 +5,13 @@ import {
   type SessionRecord,
   type Usage,
 } from "./types";
-import { cleanPrompt, toolInputLine, toolResultText } from "./text";
+import {
+  cleanPrompt,
+  isEcho,
+  lineCount,
+  toolInputLine,
+  toolResultText,
+} from "./text";
 
 /**
  * Render the active branch as a single self-contained HTML page styled like a
@@ -68,12 +74,6 @@ const md = new MarkdownIt({ html: false, linkify: true });
 /** Markdown-render a message body (escapes any literal HTML as a side effect). */
 function mdRender(text: string): string {
   return md.render(text);
-}
-
-/** "1 line" / "42 lines" — pluralized, because "1 LINES" reads as unfinished. */
-function lineCount(text: string): string {
-  const n = text === "" ? 0 : text.split("\n").length;
-  return `${n} ${n === 1 ? "line" : "lines"}`;
 }
 
 /** Escape for the few places we emit text outside markdown (summaries, pre). */
@@ -149,10 +149,8 @@ function userCard(message: Message | undefined): string {
   const text = cleanPrompt(raw);
   if (text === "") return ""; // caveat-only messages clean down to nothing
 
-  const isEcho =
-    /<bash-stdout>|<local-command-stdout>/.test(raw) &&
-    !/<bash-input>/.test(raw);
-  if (isEcho) return `<div class="echo"><pre>${esc(text)}</pre></div>`;
+  // shell echoes (stdout the user didn't type) → muted block, not a bubble
+  if (isEcho(raw)) return `<div class="echo"><pre>${esc(text)}</pre></div>`;
 
   return `<div class="row user"><div class="who you">Human</div><div class="bubble">${mdRender(text)}</div></div>`;
 }
