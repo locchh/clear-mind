@@ -1,6 +1,7 @@
-# clear-mind
+# 🧠 clear-mind
 
-Make Claude Code sessions legible.
+Make Claude Code sessions legible — because your agent's context window is a
+hoarder's garage. 🗑️
 
 Every Claude Code session is persisted as an append-only `.jsonl` log — every
 prompt, model response, tool call, and token count. `clear-mind` reads that log
@@ -15,6 +16,36 @@ bun install
 bun run typecheck        # optional: verify the checkout
 bun link                 # puts the `clear-mind` command on your PATH
 ```
+
+## Features
+
+1. 👁️ **Visualize session jsonl** — `clear-mind viz <path/to/your/transcript.jsonl>` — **built**
+
+    - interactive terminal viewer (Ink TUI): scroll, Tab between folds,
+      ⏎ to expand thinking/tool detail, `q` to quit
+    - `--html [out]` exports a chat-style page instead (markdown,
+      collapsible thinking/tool folds, paired call→result)
+
+2. 📊 **Monitor** — `clear-mind monitor <path/to/your/transcript.jsonl>` — _planned_
+
+    - Cost
+    - Token Usage
+    - Loss in middle
+    - Verification debt
+    - Comprehension rot
+    - Cognitive surrender
+    - Token blowout
+
+3. 🧹 **Context detox** — `clear-mind detox <path/to/your/transcript.jsonl>` — _planned_
+
+    - Token cleanup
+    - Detox polluted tool results
+    - Remove hallucinated / wrong-assumption content
+    - Fact cache
+
+4. 🏛️ [Mind Palace](https://artofmemory.com/blog/how-to-build-a-memory-palace/) — _planned_
+
+5. 🔌 Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
 
 ## Usage
 
@@ -35,27 +66,6 @@ Sessions live under `~/.claude/projects/<cwd-slug>/<session-uuid>.jsonl`, where
 - **`--html`** — a single self-contained page (no JS, no external assets) with
   the same layout, markdown-rendered, foldable via native `<details>`. Pipe-safe;
   good for sharing or grepping.
-
-## Roadmap
-
-`viz` is built. The rest are planned:
-
-2. **Monitor** `clear-mind monitor <path>` — cost · token usage · loss-in-middle
-   · verification debt · comprehension rot · cognitive surrender · token blowout
-3. **Context detox** `clear-mind detox <path>` — token cleanup · detox polluted
-   tool results · remove hallucinated / wrong-assumption content · fact cache
-4. [Mind Palace](https://artofmemory.com/blog/how-to-build-a-memory-palace/)
-5. Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
-
-## Format reference
-
-The session `.jsonl` format is internal and undocumented; these are reverse-
-engineered from real session files:
-
-- [session-jsonl-format.md](docs/session-jsonl-format.md) — every record type,
-  field by field
-- [session-jsonl-mechanics.md](docs/session-jsonl-mechanics.md) — how the file is
-  created, updated, and consumed (the DAG, compaction, the writer map)
 
 ## Related to
 
