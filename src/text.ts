@@ -68,6 +68,15 @@ export function isEcho(raw: string): boolean {
   );
 }
 
+/** Collapse to a genuine single line: first line, clamped, "…" if truncated
+ *  or if more lines follow (heredoc commands etc.). Summaries must be 1 line. */
+function oneLine(text: string, max = 100): string {
+  const first = text.split("\n")[0] ?? "";
+  const hasMore = text.includes("\n");
+  if (first.length > max) return first.slice(0, max - 1) + "…";
+  return hasMore ? first + " …" : first;
+}
+
 /**
  * The one informative line of a tool call's input: a Bash command, a file
  * path — falling back to compact JSON only when we don't know better.
@@ -75,13 +84,12 @@ export function isEcho(raw: string): boolean {
 export function toolInputLine(input: unknown): string {
   if (input && typeof input === "object") {
     const o = input as Record<string, unknown>;
-    // clamp to ONE line even for multi-line values (heredoc commands etc.)
-    if (typeof o.command === "string") return preview(o.command, 1, 100);
-    if (typeof o.file_path === "string") return preview(o.file_path, 1, 100);
-    if (typeof o.path === "string") return preview(o.path, 1, 100);
-    if (typeof o.pattern === "string") return preview(o.pattern, 1, 100);
+    if (typeof o.command === "string") return oneLine(o.command);
+    if (typeof o.file_path === "string") return oneLine(o.file_path);
+    if (typeof o.path === "string") return oneLine(o.path);
+    if (typeof o.pattern === "string") return oneLine(o.pattern);
   }
-  return preview(JSON.stringify(input) ?? "", 1, 100);
+  return oneLine(JSON.stringify(input) ?? "");
 }
 
 /**

@@ -39,3 +39,5 @@
 [ponytail](https://github.com/DietrichGebert/ponytail) - I love the idea of combining JavaScript code, hooks, and skills.
 
 [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) - Build production AI agents with Claude Code as a library.
+
+[Ink](https://github.com/vadimdemedes/ink) -  🌈 React for interactive command-line apps.

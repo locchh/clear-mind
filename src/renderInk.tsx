@@ -5,10 +5,11 @@ import type { Item } from "./items";
 /**
  * Interactive terminal viewer for a session's active branch.
  *
- * Rows are pre-wrapped to the terminal width so one logical row == one screen
- * row, which lets us window a scroll viewport by exact line index (Ink's own
- * auto-wrap would make line math unpredictable). Fold rows (thinking / tool
- * calls) collapse and expand in place, mirroring the HTML export.
+ * Visual language mirrors the HTML export (renderHtml.ts): each message is a
+ * bounded block with a colored left gutter — green for Human, accent for
+ * Assistant — matching labels (⚙ tool, ✱ thinking, ✓/✗ status) and the same
+ * hex palette. Rows are pre-wrapped to terminal width so one logical row ==
+ * one screen row, which lets us window a scroll viewport by exact line index.
  *
  * Keys: ↑/↓ or j/k scroll · Tab next fold · ⏎/space toggle · e/c expand/collapse
  * all · g/G top/bottom · q quit.
@@ -16,6 +17,17 @@ import type { Item } from "./items";
 export function runTui(items: Item[], title: string): void {
   render(<Viz items={items} title={title} />);
 }
+
+/* ---- palette (mirrors renderHtml.ts dark theme) ---- */
+
+const C = {
+  human: "#7cb98d",
+  accent: "#d97757",
+  think: "#b48ead",
+  ok: "#7cb98d",
+  err: "#e06c5b",
+};
+const BAR = "▎"; // colored left gutter, per message
 
 /* ---- text wrapping (exact, so scroll math is exact) ---- */
 
@@ -43,6 +55,11 @@ function truncate(text: string, width: number): string {
     : text;
 }
 
+function center(text: string, width: number): string {
+  const pad = Math.max(0, Math.floor((width - text.length) / 2));
+  return " ".repeat(pad) + text;
+}
+
 /* ---- rows model ---- */
 
 type Row = {
@@ -51,6 +68,8 @@ type Row = {
   dim?: boolean;
   bold?: boolean;
   foldIdx?: number; // set on a fold's summary row → selectable/highlightable
+  gutter?: string; // colored left bar
+  gutterColor?: string;
 };
 
 /** Flatten items into screen rows given the current open-fold set. */
@@ -62,45 +81,56 @@ function buildRows(
   const rows: Row[] = [];
   const foldRows: number[] = [];
   let foldIdx = 0;
+  const inner = width - 2; // account for "BAR "
   const push = (text: string, style: Omit<Row, "text"> = {}) =>
     rows.push({ text, ...style });
-  const pushWrapped = (text: string, style: Omit<Row, "text"> = {}) => {
-    for (const l of wrapMulti(text, width)) push(l, style);
-  };
+  const gut =
+    (color: string, style: Omit<Row, "text" | "gutter" | "gutterColor"> = {}) =>
+    (text: string) =>
+      push(text, { ...style, gutter: BAR, gutterColor: color });
 
   for (const item of items) {
     if (item.kind === "human") {
-      push("▸ Human", { color: "green", bold: true });
-      pushWrapped(item.text);
+      const g = gut(C.human);
+      g("Human");
+      for (const l of wrapMulti(item.text, inner))
+        push(l, { gutter: BAR, gutterColor: C.human });
       push("");
     } else if (item.kind === "echo") {
-      pushWrapped(item.text, { dim: true });
+      for (const l of wrapMulti(item.text, width)) push(l, { dim: true });
       push("");
     } else if (item.kind === "system") {
-      push(`── ${item.label} ──`, { dim: true });
+      push(center(`── ${item.label} ──`, width), { dim: true });
       push("");
     } else {
-      push(item.header, { color: "cyan", bold: true });
+      push(item.header, {
+        bold: true,
+        color: C.accent,
+        gutter: BAR,
+        gutterColor: C.accent,
+      });
       for (const part of item.parts) {
         if (part.kind === "text") {
-          pushWrapped(part.text);
+          for (const l of wrapMulti(part.text, inner))
+            push(l, { gutter: BAR, gutterColor: C.accent });
         } else {
           const i = foldIdx++;
           const isOpen = open.has(i);
           const chev = isOpen ? "▾" : "▸";
           const status =
             part.status === "ok" ? " ✓" : part.status === "error" ? " ✗" : "";
-          const color = part.variant === "think" ? "magenta" : "cyan";
+          const color = part.variant === "think" ? C.think : C.accent;
           foldRows.push(rows.length);
-          push(truncate(`${chev} ${part.summary}${status}`, width), {
+          push(truncate(`${chev} ${part.summary}${status}`, inner), {
             color,
             foldIdx: i,
+            gutter: BAR,
+            gutterColor: C.accent,
           });
           if (isOpen) {
-            // cap pathological payloads so scroll stays snappy
             const detail = capLines(part.detail, 600);
-            for (const l of wrapMulti(detail, width - 2))
-              push("  " + l, { dim: true });
+            for (const l of wrapMulti(detail, inner - 2))
+              push("  " + l, { dim: true, gutter: BAR, gutterColor: C.accent });
           }
         }
       }
@@ -171,10 +201,18 @@ export function Viz({ items, title }: { items: Item[]; title: string }) {
 
   return (
     <Box flexDirection="column">
-      <Text dimColor>
-        {truncate(title, width - 40)} · {rows.length} lines · {pct}% · ↑↓ scroll
-        · Tab fold · ⏎ toggle · e/c all · q quit
-      </Text>
+      <Box borderStyle="round" borderColor="gray" paddingX={1}>
+        <Text wrap="truncate">
+          <Text bold color={C.accent}>
+            clear-mind
+          </Text>
+          <Text dimColor>
+            {"  "}
+            {truncate(title, 28)} · {rows.length} lines · {pct}%
+            {"   ↑↓ scroll · Tab fold · ⏎ toggle · e/c all · q quit"}
+          </Text>
+        </Text>
+      </Box>
       {view.map((row, i) => (
         <RowLine
           key={scroll + i}
@@ -188,7 +226,7 @@ export function Viz({ items, title }: { items: Item[]; title: string }) {
 
 function RowLine({ row, selected }: { row: Row; selected: boolean }) {
   const text = row.text === "" ? " " : row.text;
-  return (
+  const content = (
     <Text
       color={selected ? undefined : row.color}
       dimColor={row.dim && !selected}
@@ -196,6 +234,13 @@ function RowLine({ row, selected }: { row: Row; selected: boolean }) {
       inverse={selected}
     >
       {text}
+    </Text>
+  );
+  if (!row.gutter) return content;
+  return (
+    <Text>
+      <Text color={row.gutterColor}>{row.gutter} </Text>
+      {content}
     </Text>
   );
 }
