@@ -2,7 +2,9 @@
 
 ## Setup
 
-- compile `bunx tsc --noEmit`
+- install `bun install`
+- typecheck `bun run typecheck`
+- install the `clear-mind` command globally `bun link`
 
 ## Features
 
