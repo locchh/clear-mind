@@ -13,5 +13,5 @@ packages/extension/out/
 
 .env
 .venv
-
+.playwright-mcp
 tmp/
