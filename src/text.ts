@@ -1,0 +1,100 @@
+/**
+ * Pure text helpers shared by every renderer (Ink TUI, HTML export).
+ * No ANSI, no HTML, no Ink — just string → string, so both renderers and
+ * their tests can use them freely.
+ */
+
+/**
+ * First `maxLines` lines, each clamped to `maxCols` columns; appends
+ * "… (+N more lines)" when cut. A raw Read result can be 2,000 lines —
+ * every collapsed detail preview goes through this so it can't drown the view.
+ */
+export function preview(text: string, maxLines = 3, maxCols = 100): string {
+  const all = text.trim().split("\n");
+  const kept = all.slice(0, maxLines).map((line) => {
+    return line.length > maxCols ? line.slice(0, maxCols) + "…" : line;
+  });
+  const dropped = all.length - kept.length;
+  if (dropped > 0) kept.push(`… (+${dropped} more lines)`);
+  return kept.join("\n");
+}
+
+/** "1 line" / "42 lines" — pluralized, because "1 lines" reads as unfinished. */
+export function lineCount(text: string): string {
+  const n = text === "" ? 0 : text.split("\n").length;
+  return `${n} ${n === 1 ? "line" : "lines"}`;
+}
+
+/**
+ * Strip the harness's XML-ish wrappers from a typed prompt so the human
+ * intent shows instead of tag soup:
+ *   <bash-input>x</bash-input>          →  $ x
+ *   <bash-stdout>…</bash-stdout>        →  (output preview)
+ *   <command-name>/model</command-name> →  /model
+ *   <local-command-caveat>…             →  (dropped — harness boilerplate)
+ */
+export function cleanPrompt(text: string): string {
+  let t = text;
+  // boilerplate wrappers: drop entirely, content and all
+  t = t.replace(/<local-command-caveat>[\s\S]*?<\/local-command-caveat>/g, "");
+  // bash echoes: keep the content, restyled
+  t = t.replace(
+    /<bash-input>([\s\S]*?)<\/bash-input>/g,
+    (_, cmd) => `$ ${cmd}`,
+  );
+  t = t.replace(/<bash-stdout>([\s\S]*?)<\/bash-stdout>/g, (_, out) =>
+    String(out).trim(),
+  );
+  t = t.replace(/<bash-stderr>([\s\S]*?)<\/bash-stderr>/g, (_, err) =>
+    String(err).trim() === "" ? "" : `stderr: ${err}`,
+  );
+  // slash-command echoes: keep just the command name / output
+  t = t.replace(/<command-name>([\s\S]*?)<\/command-name>/g, (_, c) => c);
+  t = t.replace(/<command-message>[\s\S]*?<\/command-message>/g, "");
+  t = t.replace(/<command-args>([\s\S]*?)<\/command-args>/g, (_, a) => a);
+  t = t.replace(
+    /<local-command-stdout>([\s\S]*?)<\/local-command-stdout>/g,
+    (_, out) => String(out).trim(),
+  );
+  // collapse the blank-line debris the removals leave behind
+  return t.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/** True when a typed prompt is only a shell stdout/echo, not something typed. */
+export function isEcho(raw: string): boolean {
+  return (
+    /<bash-stdout>|<local-command-stdout>/.test(raw) &&
+    !/<bash-input>/.test(raw)
+  );
+}
+
+/**
+ * The one informative line of a tool call's input: a Bash command, a file
+ * path — falling back to compact JSON only when we don't know better.
+ */
+export function toolInputLine(input: unknown): string {
+  if (input && typeof input === "object") {
+    const o = input as Record<string, unknown>;
+    // clamp to ONE line even for multi-line values (heredoc commands etc.)
+    if (typeof o.command === "string") return preview(o.command, 1, 100);
+    if (typeof o.file_path === "string") return preview(o.file_path, 1, 100);
+    if (typeof o.path === "string") return preview(o.path, 1, 100);
+    if (typeof o.pattern === "string") return preview(o.pattern, 1, 100);
+  }
+  return preview(JSON.stringify(input) ?? "", 1, 100);
+}
+
+/**
+ * Flatten a tool_result's `content` (string | array of sub-blocks) to text.
+ * Array form: keep the text fields, ignore non-text sub-blocks (images etc.).
+ */
+export function toolResultText(content: unknown): string {
+  if (typeof content === "string") return content;
+  if (!Array.isArray(content)) return "";
+  return content
+    .map((sub) =>
+      sub && typeof sub === "object" && "text" in sub ? String(sub.text) : "",
+    )
+    .filter((s) => s !== "")
+    .join("\n");
+}

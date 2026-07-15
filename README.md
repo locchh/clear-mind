@@ -8,8 +8,10 @@
 
 1. Visualize session jsonl `clear-mind viz <path/to/your/transcript.jsonl>`
 
-    - terminal render by default; `--html [out]` exports a chat-style page
-      (markdown, collapsible thinking/tool folds, paired call→result)
+    - interactive terminal viewer (Ink TUI): scroll, Tab between folds,
+      ⏎ to expand thinking/tool detail, `q` to quit
+    - `--html [out]` exports a chat-style page instead (markdown,
+      collapsible thinking/tool folds, paired call→result)
 
 2. Monitor `clear-mind monitor <path/to/your/transcript.jsonl>`
 

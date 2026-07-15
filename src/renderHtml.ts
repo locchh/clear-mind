@@ -5,7 +5,7 @@ import {
   type SessionRecord,
   type Usage,
 } from "./types";
-import { cleanPrompt, toolInputLine, toolResultText } from "./render";
+import { cleanPrompt, toolInputLine, toolResultText } from "./text";
 
 /**
  * Render the active branch as a single self-contained HTML page styled like a
