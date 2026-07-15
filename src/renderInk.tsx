@@ -415,7 +415,7 @@ export function Viz({
           ) : null}
         </Text>
         <Text wrap="truncate-start" dimColor>
-          j/k scroll · ⇥/⇧⇥ fold · ⏎ open · e/c all · q quit
+          j/k g/G scroll · ⇥/⇧⇥ fold · ⏎ open · e/c all · q quit
         </Text>
       </Box>
       {view.map((row, i) => (

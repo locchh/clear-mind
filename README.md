@@ -75,8 +75,9 @@ Sessions live under `~/.claude/projects/<cwd-slug>/<session-uuid>.jsonl`, where
 
 - **TUI** — a chat-style, keyboard-driven view: Human/Assistant turns, collapsible
   thinking and tool-call folds (call paired with its result), per-turn token
-  tallies. Keys: `j/k` scroll · `⇥`/`⇧⇥` next/prev fold · `⏎` open · `e`/`c`
-  expand/collapse all · `q` quit. Needs a real terminal.
+  tallies. Keys: `j/k` scroll · `g`/`G` jump to head/end (`G` re-engages live
+  follow) · `⇥`/`⇧⇥` next/prev fold · `⏎` open · `e`/`c` expand/collapse all ·
+  `q` quit. Needs a real terminal.
 - **`--html`** — a single self-contained page (no JS, no external assets) with
   the same layout, markdown-rendered, foldable via native `<details>`. Pipe-safe;
   good for sharing or grepping.
