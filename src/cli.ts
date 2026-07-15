@@ -3,14 +3,14 @@ import { writeFileSync } from "node:fs";
 import { basename } from "node:path";
 import { readSession } from "./read";
 import { buildIndex, activeBranch } from "./dag";
-import { buildItems } from "./items";
+import { SessionFollower } from "./follow";
 import { runTui } from "./renderInk";
 import { renderHtml } from "./renderHtml";
 
 const USAGE = `clear-mind — inspect Claude Code session transcripts
 
 Usage:
-  clear-mind viz <path/to/transcript.jsonl>                 interactive terminal viewer (TUI)
+  clear-mind viz <path/to/transcript.jsonl>                 live terminal viewer (follows the file)
   clear-mind viz <path/to/transcript.jsonl> --html [out]    export a chat-style HTML page
                                                             (default out: <session>.html)`;
 
@@ -29,12 +29,11 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  const records = readSession(path);
-  const branch = activeBranch(records, buildIndex(records));
-
   // --html [out]: next arg is the output path unless it's another flag
   const htmlFlag = args.indexOf("--html");
   if (htmlFlag !== -1) {
+    const records = readSession(path);
+    const branch = activeBranch(records, buildIndex(records));
     const next = args[htmlFlag + 1];
     const out =
       next && !next.startsWith("--")
@@ -55,7 +54,11 @@ function main(argv: string[]): void {
     process.exit(1);
   }
 
-  runTui(buildItems(branch), basename(path));
+  // live by default: the follower owns all reading (initial load = first
+  // poll), and the TUI keeps following the file as the session grows
+  const follower = new SessionFollower(path);
+  const initial = follower.poll();
+  runTui(initial?.items ?? [], basename(path), follower);
 }
 
 main(process.argv);

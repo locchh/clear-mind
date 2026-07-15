@@ -21,7 +21,8 @@ bun link                 # puts the `clear-mind` command on your PATH
 
 1. 👁️ **Visualize session jsonl** — `clear-mind viz <path/to/your/transcript.jsonl>` — **built**
 
-    - interactive terminal viewer (Ink TUI): scroll, Tab between folds,
+    - live interactive terminal viewer (Ink TUI) — follows the session as it
+      grows, appending in place (scroll and fold state survive): scroll, Tab between folds,
       ⏎ to expand thinking/tool detail, `q` to quit
     - `--html [out]` exports a chat-style page instead (markdown,
       collapsible thinking/tool folds, paired call→result)
@@ -45,14 +46,27 @@ bun link                 # puts the `clear-mind` command on your PATH
 
 4. 🏛️ [Mind Palace](https://artofmemory.com/blog/how-to-build-a-memory-palace/) — _planned_
 
-5. 🔌 Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
+5. 🤝 **Share Mind** — one shared mind across your codebases — _planned_
+
+    - each repo's agent keeps its own head; clear-mind reads every session,
+      distills what each agent learned, and holds it in one provenance-tagged store
+    - reading: agents query the store over MCP
+    - delivery: event-driven, no polling — each agent runs a blocking
+      background listener (`inotifywait` on its inbox) that exits when a
+      message lands, and the harness re-invokes the agent on background-task
+      exit; hooks (`UserPromptSubmit`/`Stop`) drain the backlog on normal
+      turns; a closed session is woken by a watcher spawning `claude -p`
+      headless — clear-mind stays the medium, never the messenger: the
+      agent's own listener does the injecting
+
+6. 🔌 Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
 
 ## Usage
 
 **Visualize a session** (shipped):
 
 ```sh
-clear-mind viz <path/to/transcript.jsonl>            # interactive terminal viewer
+clear-mind viz <path/to/transcript.jsonl>            # live terminal viewer (follows the file)
 clear-mind viz <path/to/transcript.jsonl> --html     # → <session>.html
 ```
 
@@ -78,3 +92,5 @@ Sessions live under `~/.claude/projects/<cwd-slug>/<session-uuid>.jsonl`, where
 [Claude Agent SDK](https://code.claude.com/docs/en/agent-sdk/overview) - Build production AI agents with Claude Code as a library.
 
 [Claude Code Loops](https://claude.ai/public/artifacts/11bdc800-3d82-4cd1-8a05-a82ae516f8cb) - An applied coursebook on Claude Code loops, published as a public Claude artifact.
+
+[Claude - Hooks reference](https://code.claude.com/docs/en/hooks) - Reference for Claude Code hook events, configuration schema, JSON input/output formats, exit codes, async hooks, HTTP hooks, prompt hooks, and MCP tool hooks.

@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { watch } from "node:fs";
 import { Box, render, Text, useApp, useInput } from "ink";
 import stringWidth from "string-width";
 import type { Item } from "./items";
+import type { SessionFollower } from "./follow";
 
 /**
  * Interactive terminal viewer for a session's active branch.
@@ -19,9 +21,19 @@ import type { Item } from "./items";
  *
  * Keys: ↑/↓ or j/k scroll · Tab/⇧Tab next/prev fold · ⏎/space toggle ·
  * e/c expand/collapse all · g/G top/bottom · q quit.
+ *
+ * Live: pass a SessionFollower and the view follows the file — new records
+ * append IN PLACE (no rerun): items before the follower's `changedFrom` are
+ * identical by construction, so existing rows, fold state and scroll position
+ * all stay valid; if you're at the bottom the view sticks to the new bottom,
+ * otherwise a "+N" hint appears in the header.
  */
-export function runTui(items: Item[], title: string): void {
-  render(<Viz items={items} title={title} />);
+export function runTui(
+  items: Item[],
+  title: string,
+  follower?: SessionFollower,
+): void {
+  render(<Viz items={items} title={title} follower={follower} />);
 }
 
 /* ---- palette (mirrors renderHtml.ts dark theme) ---- */
@@ -240,7 +252,15 @@ const clamp = (n: number, lo: number, hi: number) =>
 
 /* ---- component ---- */
 
-export function Viz({ items, title }: { items: Item[]; title: string }) {
+export function Viz({
+  items,
+  title,
+  follower,
+}: {
+  items: Item[];
+  title: string;
+  follower?: SessionFollower;
+}) {
   const { exit } = useApp();
   const width = Math.min(
     Math.max(40, (process.stdout.columns ?? 80) - 2),
@@ -251,16 +271,54 @@ export function Viz({ items, title }: { items: Item[]; title: string }) {
   const [open, setOpen] = useState<Set<number>>(new Set());
   const [sel, setSel] = useState(-1); // -1 = nothing selected until first Tab
   const [scroll, setScroll] = useState(0);
+  const [liveItems, setLiveItems] = useState(items);
+  const [fresh, setFresh] = useState(0); // rows appended while scrolled up
   // mirror of `sel` that updates synchronously — two keys arriving in the same
   // tick (Tab then Enter) must see each other's effect, and setState commits
   // too late for that
   const selRef = useRef(-1);
 
+  // live mode: follow the file — new records append in place. Items before
+  // the follower's changedFrom are identical, so rows/folds/scroll built from
+  // them stay valid; only content below the change point re-renders.
+  useEffect(() => {
+    if (!follower) return;
+    let disposed = false;
+    const drain = () => {
+      const update = follower.poll();
+      if (update && !disposed) setLiveItems(update.items);
+    };
+    const watcher = watch(follower.path, drain);
+    const fallback = setInterval(drain, 3000); // inotify events can coalesce
+    return () => {
+      disposed = true;
+      watcher.close();
+      clearInterval(fallback);
+    };
+  }, [follower]);
+
   const { rows, foldRows } = useMemo(
-    () => buildRows(items, open, width),
-    [items, open, width],
+    () => buildRows(liveItems, open, width),
+    [liveItems, open, width],
   );
   const maxScroll = Math.max(0, rows.length - bodyHeight);
+
+  // sticky bottom: if the user was at the bottom when new rows arrived, stay
+  // at the (new) bottom; otherwise count what they haven't seen
+  const prevRowsRef = useRef({ len: rows.length, maxScroll });
+  useEffect(() => {
+    const prev = prevRowsRef.current;
+    prevRowsRef.current = { len: rows.length, maxScroll };
+    if (rows.length === prev.len) return;
+    if (scroll >= prev.maxScroll) setScroll(maxScroll);
+    else setFresh((n) => n + Math.max(0, rows.length - prev.len));
+    // deps intentionally narrow: react only to growth
+  }, [rows.length]);
+
+  // clear the "+N" hint once the user reaches the bottom
+  useEffect(() => {
+    if (fresh > 0 && scroll >= maxScroll) setFresh(0);
+  }, [scroll, maxScroll, fresh]);
   const selClamped =
     foldRows.length === 0 || sel < 0 ? -1 : clamp(sel, 0, foldRows.length - 1);
 
@@ -350,6 +408,11 @@ export function Viz({ items, title }: { items: Item[]; title: string }) {
             {"  "}
             {truncate(title, 20)} · {pct}%{foldPos}
           </Text>
+          {fresh > 0 ? (
+            <Text bold color={C.human}>
+              {"  ▼ +" + fresh}
+            </Text>
+          ) : null}
         </Text>
         <Text wrap="truncate-start" dimColor>
           j/k scroll · ⇥/⇧⇥ fold · ⏎ open · e/c all · q quit
