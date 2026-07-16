@@ -27,15 +27,33 @@ bun link                 # puts the `clear-mind` command on your PATH
     - `--html [out]` exports a chat-style page instead (markdown,
       collapsible thinking/tool folds, paired call→result)
 
-2. 📊 **Monitor** — `clear-mind monitor <path/to/your/transcript.jsonl>` — _planned_
+2. 📊 **Monitor** — _planned_
 
-    - Cost
-    - Token Usage
-    - Loss in middle
-    - Verification debt
-    - Comprehension rot
-    - Cognitive surrender
-    - Token blowout
+    - two scopes: **per session** (`monitor <transcript.jsonl>`) and **per
+      codebase** (`monitor <project-dir>`, aggregating every session under
+      `~/.claude/projects/<slug>/`)
+    - **live TUI dashboard** (per session) — reuses the viz follower, but
+      renders a fixed grid of stat tiles that recompute each tick instead of a
+      scrolling transcript. Headline gauge: current context size climbing
+      toward the compaction limit; plus running cost and per-turn sparklines
+    - **Cost** is _derived_, not read — the log has token counts, no cost
+      field. Compute `tokens × per-model rate` from each `assistant` record's
+      `usage` + `model`, pricing input / output / cache-read / cache-write
+      separately (rates live in a small model→price table). Dedupe by
+      `requestId` before summing (usage is duplicated across the records of one
+      response), and — for codebase scope — dedupe across files, since forked
+      sessions can copy history
+    - straightforward metrics: **Token Usage**, **Token blowout**
+      (`compact_boundary` preTokens→postTokens drops)
+    - harder behavioral signals — heuristic, all _planned_:
+        - **Loss in middle** — token distance between where a fact entered (a
+          `tool_result`) and where it's used again
+        - **Verification debt** — `Edit`/`Write` tool calls not followed by a
+          verifying `Bash`/`Read`/test before `end_turn`
+        - **Comprehension rot** — repeated `Read`s of the same `filePath`
+          across the session
+        - **Cognitive surrender** — high `turn_duration` while assistant text
+          tokens stay low; interrupt records (`interruptedMessageId`)
 
 3. 🧹 **Context detox** — `clear-mind detox <path/to/your/transcript.jsonl>` — _planned_
 
