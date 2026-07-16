@@ -49,15 +49,9 @@ bun link                 # puts the `clear-mind` command on your PATH
 5. 🤝 **Share Mind** — one shared mind across your codebases — _planned_
 
     - each repo's agent keeps its own head; clear-mind reads every session,
-      distills what each agent learned, and holds it in one provenance-tagged store
+      distills what each agent learned, and holds it in one provenance-tagged store?
     - reading: agents query the store over MCP
-    - delivery: event-driven, no polling — each agent runs a blocking
-      background listener (`inotifywait` on its inbox) that exits when a
-      message lands, and the harness re-invokes the agent on background-task
-      exit; hooks (`UserPromptSubmit`/`Stop`) drain the backlog on normal
-      turns; a closed session is woken by a watcher spawning `claude -p`
-      headless — clear-mind stays the medium, never the messenger: the
-      agent's own listener does the injecting
+    - delivery: event-driven, no polling
 
 6. 🔌 Support claude-code first, then maybe codex, opencode, deepagents, cursor, etc.
 
